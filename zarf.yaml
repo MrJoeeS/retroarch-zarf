@@ -45,7 +45,6 @@ variables:
 
 documentation:
   readme: README.md
-  walkthrough: blog.md
 
 components:
   - name: retroarch-policy
