@@ -1,0 +1,25 @@
+apiVersion: uds.dev/v1alpha1
+kind: Exemption
+metadata:
+  name: retroarch
+  namespace: uds-policy-exemptions
+  labels:
+    app.kubernetes.io/name: retroarch
+    app.kubernetes.io/managed-by: zarf
+spec:
+  exemptions:
+    - policies:
+        - RequireNonRootUser
+        - RestrictSeccomp
+        - DropAllCapabilities
+        - DisallowPrivileged
+      matcher:
+        namespace: retroarch
+        name: "^retroarch-.*"
+        kind: pod
+      title: retroarch
+      description: >-
+        LinuxServer RetroArch uses s6-overlay and a Selkies desktop stack that
+        require root at startup, an unconfined seccomp profile, and the ability
+        to manage process privileges — matching the upstream Docker guidance for
+        GUI containers.

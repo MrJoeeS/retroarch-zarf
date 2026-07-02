@@ -1,0 +1,27 @@
+log_format = 'console'
+log_level = 'info'
+zarf_cache = '~/.zarf-cache'
+
+[dev]
+[dev.deploy]
+connected = true
+
+[init]
+[init.agent]
+mutation_policy = 'all'
+
+[init.git]
+push_username = 'zarf-git-user'
+
+[init.registry]
+push_username = 'zarf-push'
+
+[package]
+oci_concurrency = 6
+
+[package.deploy]
+retries = 3
+timeout = 900000000000
+
+[package.publish]
+retries = 1

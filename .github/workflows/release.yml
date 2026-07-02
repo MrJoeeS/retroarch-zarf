@@ -1,0 +1,64 @@
+name: Release Zarf Package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Zarf
+        uses: zarf-dev/setup-zarf@v1.0.1
+        with:
+          version: v0.79.0
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Create Zarf package
+        run: |
+          zarf package create . \
+            --confirm \
+            --architecture "${{ matrix.arch }}" \
+            --set "PACKAGE_VERSION=${{ steps.version.outputs.version }}" \
+            --set "RETROARCH_IMAGE=lscr.io/linuxserver/retroarch:latest"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zarf-package-${{ matrix.arch }}
+          path: zarf-package-retroarch-*.tar.zst
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/zarf-package-retroarch-*.tar.zst
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}

@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/v0.79.0/zarf.schema.json
+kind: ZarfPackageConfig
+metadata:
+  name: retroarch
+  description: >-
+    UDS-ready Zarf package for LinuxServer RetroArch — a web-accessible
+    RetroArch desktop for running classic games through a browser.
+  version: "###ZARF_PKG_TMPL_PACKAGE_VERSION###"
+  url: https://github.com/MrJoeeS/retroarch_zarf
+  annotations:
+    dev.uds.title: RetroArch
+    dev.uds.tagline: "Classic game emulation in your browser"
+    dev.uds.categories: Games
+    dev.uds.keywords: "retroarch,emulation,games,linuxserver"
+
+constants:
+  - name: PACKAGE_VERSION
+    value: "0.1.0"
+  - name: RETROARCH_IMAGE
+    value: "lscr.io/linuxserver/retroarch:latest"
+
+variables:
+  - name: DOMAIN
+    description: Base domain for UDS ingress (e.g. retroarch.uds.dev)
+    default: uds.dev
+  - name: RETROARCH_PUID
+    description: User ID for file ownership in /config
+    default: "1000"
+  - name: RETROARCH_PGID
+    description: Group ID for file ownership in /config
+    default: "1000"
+  - name: RETROARCH_TZ
+    description: Timezone (see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+    default: "Etc/UTC"
+  - name: RETROARCH_CUSTOM_USER
+    description: HTTP basic auth username (leave empty to disable auth)
+    default: ""
+  - name: RETROARCH_PASSWORD
+    description: HTTP basic auth password (leave empty to disable auth)
+    default: ""
+    sensitive: true
+  - name: RETROARCH_STORAGE_SIZE
+    description: Persistent volume size for RetroArch config and saves
+    default: "10Gi"
+
+documentation:
+  readme: README.md
+  walkthrough: blog.md
+
+components:
+  - name: retroarch-policy
+    description: UDS policy exemptions required by the LinuxServer RetroArch image
+    required: true
+    manifests:
+      - name: retroarch-exemption
+        namespace: uds-policy-exemptions
+        files:
+          - manifests/uds-exemption.yaml
+  - name: retroarch
+    description: Deploy LinuxServer RetroArch with UDS ingress at retroarch.###ZARF_VAR_DOMAIN###
+    required: true
+    charts:
+      - name: retroarch
+        version: 0.1.0
+        namespace: retroarch
+        localPath: chart
+        valuesFiles:
+          - values/upstream-values.yaml
+    images:
+      - "###ZARF_PKG_TMPL_RETROARCH_IMAGE###"
+    actions:
+      onDeploy:
+        after:
+          - description: Restart RetroArch so Pepr exemptions apply to running pods
+            maxTotalSeconds: 120
+            cmd: kubectl rollout restart deployment/retroarch -n retroarch

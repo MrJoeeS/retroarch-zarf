@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "retroarch.fullname" . }}
+  labels:
+    {{- include "retroarch.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "retroarch.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "retroarch.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: retroarch
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
+              protocol: TCP
+            - name: https
+              containerPort: {{ .Values.service.httpsPort }}
+              protocol: TCP
+          env:
+            - name: PUID
+              value: {{ .Values.retroarch.puid | quote }}
+            - name: PGID
+              value: {{ .Values.retroarch.pgid | quote }}
+            - name: TZ
+              value: {{ .Values.retroarch.tz | quote }}
+            {{- if .Values.retroarch.customUser }}
+            - name: CUSTOM_USER
+              value: {{ .Values.retroarch.customUser | quote }}
+            {{- end }}
+            {{- if .Values.retroarch.password }}
+            - name: PASSWORD
+              value: {{ .Values.retroarch.password | quote }}
+            {{- end }}
+            - name: TITLE
+              value: {{ .Values.retroarch.title | quote }}
+            - name: PIXELFLUX_WAYLAND
+              value: {{ .Values.retroarch.pixelfluxWayland | quote }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            seccompProfile:
+              type: Unconfined
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: {{ include "retroarch.fullname" . }}-config
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
