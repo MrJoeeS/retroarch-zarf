@@ -1,0 +1,15 @@
+# Zarf build output
+zarf-package-*.tar.zst
+zarf-package-*.tar
+zarf-init-*.tar.zst
+
+# Zarf cache and logs
+.zarf-cache/
+zarf-*.log
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+blog.md
